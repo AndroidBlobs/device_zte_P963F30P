@@ -1,0 +1,92 @@
+# Copyright (C) 2012 ZTE by RUIJIAGUI
+#
+# IMPORTANT: Do not create world writable files or directories.
+# This is a common source of Android security bugs.
+#
+import /vendor/etc/init/hw/init.sensor.calibrate.rc
+
+#cpu hungry policy
+on init
+    mkdir /dev/cpuctl/cpu_hungry_app
+    mkdir /mnt/vendor/persist 0771 system root
+    chown system system /dev/cpuctl/cpu_hungry_app/tasks
+    chmod 0666 /dev/cpuctl/cpu_hungry_app/tasks
+    write /dev/cpuctl/cpu_hungry_app/cpu.shares 52
+    write /dev/cpuctl/cpu_hungry_app/cpu.rt_period_us 1000000
+    write /dev/cpuctl/cpu_hungry_app/cpu.rt_runtime_us 950000
+
+
+on boot
+    #add for charging policy
+    chown system system /sys/module/zte_misc/parameters/demo_charging_policy
+    chown system system /sys/module/zte_misc/parameters/expired_charging_policy
+
+    # add for touch self-test
+    chown system system /sys/devices/virtual/tsp_fw/touchscreen/tpd_test_cmd
+    chown system system /sys/devices/virtual/tsp_fw/touchscreen/tpd_test_filename
+    chown system system /sys/devices/virtual/tsp_fw/touchscreen/tpd_test_ini_file_path
+    chown system system /sys/devices/virtual/tsp_fw/touchscreen/tpd_test_save_file_path
+    chown system system /sys/devices/virtual/tsp_fw/touchscreen/tpd_test_save_file_name
+    chmod 0646 /sys/devices/virtual/tsp_fw/touchscreen/tpd_test_cmd
+    chmod 0646 /sys/devices/virtual/tsp_fw/touchscreen/tpd_test_filename
+    chmod 0646 /sys/devices/virtual/tsp_fw/touchscreen/tpd_test_ini_file_path
+    chmod 0646 /sys/devices/virtual/tsp_fw/touchscreen/tpd_test_save_file_path
+    chmod 0646 /sys/devices/virtual/tsp_fw/touchscreen/tpd_test_save_file_name
+
+    # add for SAR sensor pv-test
+    chown system system /sys/bus/i2c/drivers/sx932x/4-0028/status
+
+    #add for after-sale-requirement
+
+
+    chmod 0775  /mnt/vendor/persist
+    chown root system /mnt/vendor/persist
+
+    mkdir /mnt/vendor/persist/zstats
+    chmod 0775 /mnt/vendor/persist/zstats
+    chown root system /mnt/vendor/persist/zstats
+    chown root system /mnt/vendor/persist/zstats/timezone.dat
+    chown root system /mnt/vendor/persist/zstats/avg_current.dat
+
+    chmod 0664  /dev/kmsg
+    chown root system  /dev/kmsg
+
+    chown root system /mnt/vendor/persist/zstats/capacity.dat
+    chown root system /mnt/vendor/persist/zstats/charging.dat
+    chown root system /mnt/vendor/persist/zstats/cycle.dat
+
+    chmod 0664  /mnt/vendor/persist/zstats/capacity.dat
+    chmod 0664  /mnt/vendor/persist/zstats/charging.dat
+    chmod 0664  /mnt/vendor/persist/zstats/cycle.dat
+    chmod 0664  /mnt/vendor/persist/zstats/timezone.dat
+    chmod 0664  /mnt/vendor/persist/zstats/avg_current.dat
+
+    class_start brd_normal
+
+
+on post-fs
+    restorecon_recursive /mnt/vendor/persist
+
+on property:sys.demochargingpolicy.protect=1
+    write /sys/module/zte_misc/parameters/demo_charging_policy 1
+on property:sys.demochargingpolicy.protect=0
+    write /sys/module/zte_misc/parameters/demo_charging_policy 0
+
+on property:ro.vendor.ramconfig=2
+    write /proc/sys/vm/extra_free_kbytes 10800
+    write /sys/kernel/mm/ksm/page_to_scan 100
+    write /sys/kernel/mm/ksm/sleep_millisecs 500
+    write /sys/kernel/mm/ksm/run 1
+
+on property:ro.vendor.ramconfig=4
+    write /proc/sys/vm/extra_free_kbytes 10800
+    write /sys/kernel/mm/ksm/page_to_scan 100
+    write /sys/kernel/mm/ksm/sleep_millisecs 500
+    write /sys/kernel/mm/ksm/run 1
+
+service brd_normal /vendor/bin/battery_record_daemon normal
+    class brd_normal
+    user root
+    group system root
+    oneshot
+
